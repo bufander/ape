@@ -12,7 +12,7 @@ from ape.exceptions import (
     SignatureError,
     TransactionError,
 )
-from ape.types.signatures import recover_signer
+# from ape.types.signatures import recover_signer
 from ape_ethereum.ecosystem import ProxyType
 
 MISSING_VALUE_TRANSFER_ERR_MSG = "Must provide 'VALUE' or use 'send_everything=True"
@@ -38,11 +38,11 @@ def test_sign_message(signer):
     signature = signer.sign_message(message)
     assert signer.check_signature(message, signature)
 
-
-def test_recover_signer(signer):
-    message = encode_defunct(text="Hello Apes!")
-    signature = signer.sign_message(message)
-    assert recover_signer(message, signature) == signer
+#
+# def test_recover_signer(signer):
+#     message = encode_defunct(text="Hello Apes!")
+#     signature = signer.sign_message(message)
+#     assert recover_signer(message, signature) == signer
 
 
 def test_sign_eip712_message(signer):
@@ -112,6 +112,26 @@ def test_transfer_using_type_0(sender, receiver):
     sender.transfer(receiver, "1 gwei", type=0)
     expected = initial_balance + convert("1 gwei", int)
     assert receiver.balance == expected
+
+
+def test_deploy_blueprint(owner, contract_container, chain, clean_contracts_cache):
+    contract = owner.deploy_blueprint(contract_container)
+    assert contract.address
+    assert contract.txn_hash
+
+    # Deploy again to prove that we get the correct txn_hash below
+    owner.deploy_blueprint(contract_container)
+
+    # Verify can reload same contract from cache
+    contract_from_cache = ape.Contract(contract.address)
+    assert contract_from_cache.contract_type == contract.contract_type
+    assert contract_from_cache.address == contract.address
+    assert contract_from_cache.txn_hash == contract.txn_hash
+
+    # TODO: checkout that it has the proper bytecode expected on a blueprint
+    assert contract_from_cache.contract_type.runtime_bytecode
+
+    assert 0
 
 
 def test_deploy(owner, contract_container, chain, clean_contracts_cache):
